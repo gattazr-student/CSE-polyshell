@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "readcmd.h"
 
 
@@ -11,7 +12,9 @@ int main()
 {
 	while (1) {
 		struct cmdline *l;
-		int i, j;
+		int i;
+		int pid;
+		int status;
 
 		printf("shell> ");
 		l = readcmd();
@@ -34,11 +37,18 @@ int main()
 		/* Display each command of the pipe */
 		for (i=0; l->seq[i]!=0; i++) {
 			char **cmd = l->seq[i];
-			printf("seq[%d]: ", i);
-			for (j=0; cmd[j]!=0; j++) {
-				printf("%s ", cmd[j]);
+			pid = fork();
+
+			if(pid < 0){
+				perror("shell: fork failed\n");
+			}else if(pid == 0){
+				if(execvp(cmd[0], cmd) == -1){
+					perror("shell: error on execvp\n");
+					exit(-1);
+				}
+			}else{
+				waitpid(pid, &status, 0);
 			}
-			printf("\n");
 		}
 	}
 }
