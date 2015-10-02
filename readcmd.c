@@ -184,6 +184,7 @@ struct cmdline *readcmd(void)
 	s->in = 0;
 	s->out = 0;
 	s->seq = 0;
+	s->seqlen = 0;
 
 	i = 0;
 	while ((w = words[i++]) != 0) {
@@ -246,6 +247,7 @@ struct cmdline *readcmd(void)
 		free(cmd);
 	free(words);
 	s->seq = seq;
+	s->seqlen = seq_len;
 	return s;
 error:
 	while ((w = words[i++]) != 0) {
