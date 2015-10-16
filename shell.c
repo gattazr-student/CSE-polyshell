@@ -50,18 +50,20 @@ int main()
 						/* Error on open */
 						perror("shell: Error on open (stdin) ");
 					}
+					/* Remplace stdin */
 					if(dup2(fd_in, STDIN_FILENO) < 0){
 						/* Error on dup2 */
 						perror("shell: Error on dup2 (stdin) ");
 					}
 				}
-				if (i==l->seqlen-1 && l->out != 0){
+				if (l->seq[i+1] == 0 && l->out != 0){
 					/* Redirection de stdout */
 					fd_out = open(l->out, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 					if(fd_out < 0){
 						/* Error on open */
 						perror("shell: Error on open (stdout) ");
 					}
+					/* Remplace stdout */
 					if(dup2(fd_out, STDOUT_FILENO) < 0){
 						/* Error on dup2 */
 						perror("shell: Error on dup2 (stdout) ");
