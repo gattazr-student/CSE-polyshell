@@ -4,8 +4,6 @@
 ```
 pwd
 mkdir tests
-cd tests
-cd ..
 ls
 rmdir tests
 ```
