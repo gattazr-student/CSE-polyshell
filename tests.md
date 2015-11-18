@@ -4,6 +4,8 @@
 ```
 pwd
 mkdir tests
+cd tests
+cd ..
 ls
 rmdir tests
 ```
@@ -41,6 +43,7 @@ ls | grep read | grep \.c
 ### errors
 ##### misplaced pipe (readline error)
 ```
+|
 ls || grep read
 |ls | grep read
 ls | grep read|
