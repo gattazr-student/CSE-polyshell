@@ -17,12 +17,8 @@ int main()
 		int pid;
 		int status;
 		int fd_in, fd_out;
-		int descripteur1_array[2];
-		int descripteur2_array[2];
-		int *descripteur1, *descripteur2, *temp;
-
-		descripteur1 = descripteur1_array;
-		descripteur2 = descripteur2_array;
+		int previous_pipe[2];
+		int current_pipe[2];
 
 		printf("shell> ");
 		l = readcmd();
@@ -45,7 +41,7 @@ int main()
 
 			if(l->seq[i+1] != 0){
 				/* Il y a une commande suivante, il y a donc besoin d'un pipe */
-				if(pipe(descripteur2) < 0){
+			if(pipe(current_pipe) < 0){
 					perror("shell: pipe creation failed ");
 				}
 			}
@@ -74,9 +70,9 @@ int main()
 
 				if(i!=0){
 					/* Il faut lire dans le pipe */
-					/* Remplace stdin par descripteur1[0] */
-					close(descripteur1[1]); /* Ferme le descripteur inutile dans le pipe */
-					if(dup2(descripteur1[0], STDIN_FILENO) < 0){
+					/* Remplace stdin par previous_pipe[0] */
+					close(previous_pipe[1]); /* Ferme le descripteur inutile dans le pipe */
+					if(dup2(previous_pipe[0], STDIN_FILENO) < 0){
 						/* Error on dup2 */
 						perror("shell: Error on dup2 (stdin) ");
 					}
@@ -84,9 +80,9 @@ int main()
 
 				if(l->seq[i+1] != 0){
 					/* Il faut écrire dans le pipe */
-					/* Remplace stdout par descripteur2[1] */
-					close(descripteur2[0]); /* Ferme le descripteur inutile dans le pipe */
-					if(dup2(descripteur2[1], STDOUT_FILENO) < 0){
+					/* Remplace stdout par current_pipe[1] */
+					close(current_pipe[0]); /* Ferme le descripteur inutile dans le pipe */
+					if(dup2(current_pipe[1], STDOUT_FILENO) < 0){
 						/* Error on dup2 */
 						perror("shell: Error on dup2 (stdin) ");
 					}
@@ -113,20 +109,19 @@ int main()
 				}
 			}else{
 				if(i > 0){
-					/* Ferme le stdou du pipe précédent */
-					close(descripteur1[0]);
+					/* Ferme le stdout du pipe précédent */
+					close(previous_pipe[0]);
 				}
 				if(l->seq[i+1] != 0){
 					/* ferme le stdin du pipe courant */
-					close(descripteur2[1]);
+					close(current_pipe[1]);
 				}
 				/* Processus père */
 				waitpid(pid, &status, 0);
 
-				/* Inverse les descripteurs  */
-				temp = descripteur1;
-				descripteur1 = descripteur2;
-				descripteur2 = temp;
+				/* Change les descripteurs courant en descripteur précédents  */
+				previous_pipe[0] = current_pipe[0];
+				previous_pipe[1] = current_pipe[1];
 
 			}
 		}
