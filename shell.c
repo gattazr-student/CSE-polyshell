@@ -17,6 +17,12 @@ int main()
 		int pid;
 		int status;
 		int fd_in, fd_out;
+		int descripteur1_array[2];
+		int descripteur2_array[2];
+		int *descripteur1, *descripteur2, *temp;
+
+		descripteur1 = descripteur1_array;
+		descripteur2 = descripteur2_array;
 
 		printf("shell> ");
 		l = readcmd();
@@ -36,6 +42,15 @@ int main()
 		/* Display each command of the pipe */
 		for (i=0; l->seq[i]!=0; i++) {
 			char **cmd = l->seq[i];
+
+			if(l->seq[i+1] != 0){
+				/* Il y a une commande suivante, il y a donc besoin d'un pipe */
+				if(pipe(descripteur2) < 0){
+					perror("shell: pipe creation failed ");
+				}
+			}
+
+			/* Fork it !*/
 			pid = fork();
 
 			if(pid < 0){
@@ -56,6 +71,27 @@ int main()
 						perror("shell: Error on dup2 (stdin) ");
 					}
 				}
+
+				if(i!=0){
+					/* Il faut lire dans le pipe */
+					/* Remplace stdin par descripteur1[0] */
+					close(descripteur1[1]); /* Ferme le descripteur inutile dans le pipe */
+					if(dup2(descripteur1[0], STDIN_FILENO) < 0){
+						/* Error on dup2 */
+						perror("shell: Error on dup2 (stdin) ");
+					}
+				}
+
+				if(l->seq[i+1] != 0){
+					/* Il faut écrire dans le pipe */
+					/* Remplace stdout par descripteur2[1] */
+					close(descripteur2[0]); /* Ferme le descripteur inutile dans le pipe */
+					if(dup2(descripteur2[1], STDOUT_FILENO) < 0){
+						/* Error on dup2 */
+						perror("shell: Error on dup2 (stdin) ");
+					}
+				}
+
 				if (l->seq[i+1] == 0 && l->out != 0){
 					/* Redirection de stdout */
 					fd_out = open(l->out, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
@@ -76,8 +112,22 @@ int main()
 					exit(-1);
 				}
 			}else{
+				if(i > 0){
+					/* Ferme le stdou du pipe précédent */
+					close(descripteur1[0]);
+				}
+				if(l->seq[i+1] != 0){
+					/* ferme le stdin du pipe courant */
+					close(descripteur2[1]);
+				}
 				/* Processus père */
 				waitpid(pid, &status, 0);
+
+				/* Inverse les descripteurs  */
+				temp = descripteur1;
+				descripteur1 = descripteur2;
+				descripteur2 = temp;
+
 			}
 		}
 	}
